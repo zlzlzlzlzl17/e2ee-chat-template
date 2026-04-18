@@ -31,7 +31,7 @@ The original application was developed for a personal/family use case. This publ
 
 The template has not been fully end-to-end tested after the cleanup process. It should be treated as a reference implementation or starter project, not as a production-ready application.
 
-Before using it for a real deployment, review the code, replace all configuration values, set up your own Firebase/FCM and signing keys, and test the backend and Android app in your own environment.
+Before using it for a real deployment, review the code, replace all configuration values, set up your own Firebase/FCM and signing keys, and test the backend and Android app in your own environment. And any review or criticism is welcome.
 
 ## Important Warnings
 
