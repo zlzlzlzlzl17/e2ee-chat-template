@@ -1,0 +1,9 @@
+{
+  "name": "E2EE Chat",
+  "short_name": "E2EE",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0b0f",
+  "theme_color": "#121826",
+  "icons": []
+}

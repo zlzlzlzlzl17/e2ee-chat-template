@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>E2EE Chat Admin</title>
+  <style>
+    :root{--bg:#efeae2;--card:#fff;--ink:#1f2937;--muted:#6b7280;--brand:#128c7e;--danger:#b42318;--border:rgba(15,23,42,.08)}
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,rgba(37,211,102,.18),transparent 28%),radial-gradient(circle at bottom right,rgba(18,140,126,.16),transparent 26%),var(--bg);color:var(--ink)}
+    h1,h2,h3,p{margin:0}.hidden{display:none!important}.wrap{width:min(1160px,calc(100vw - 24px));margin:0 auto;padding:24px 0 48px}.stack,.grid{display:grid;gap:14px}.summary-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.panel-grid{grid-template-columns:1.1fr 1fr}.action-row,.toolbar-actions{display:flex;gap:10px;flex-wrap:wrap}.lead,.muted{color:var(--muted);line-height:1.6}.card{background:var(--card);border-radius:28px;border:1px solid var(--border);box-shadow:0 18px 45px rgba(15,23,42,.08)}.login-shell{min-height:100vh;display:grid;place-items:center;padding:24px}.login-card{width:min(420px,100%);padding:28px}.toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:22px 24px;margin-bottom:16px}.section,.summary-card{padding:20px}.summary-value{margin-top:10px;font-size:28px;font-weight:700;color:var(--brand)}.summary-label{color:var(--muted)}label{display:grid;gap:8px;font-size:14px}input[type="text"],input[type="password"],input[type="file"]{width:100%;border:1px solid rgba(15,23,42,.12);border-radius:16px;padding:12px 14px;font:inherit;background:#fff}button{border:0;border-radius:999px;padding:12px 18px;font:inherit;cursor:pointer;background:var(--brand);color:#fff}button.secondary{background:rgba(18,140,126,.1);color:var(--brand)}button.ghost{background:#f7faf9;color:var(--ink);border:1px solid rgba(15,23,42,.08)}button.danger{background:var(--danger)}button:disabled{opacity:.6;cursor:not-allowed}.status{min-height:22px;color:var(--brand);font-size:14px}.error{color:var(--danger)}.list{margin-top:14px;display:grid;gap:10px}.list-item{border:1px solid var(--border);border-radius:18px;padding:12px 14px;display:grid;gap:8px}.row-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.capsule{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;background:rgba(18,140,126,.1);color:var(--brand)}.release-card,.hint-box{border:1px solid var(--border);border-radius:18px;padding:14px;display:grid;gap:8px}.release-card{background:rgba(18,140,126,.03)}.hint-box{border-style:dashed;background:rgba(18,140,126,.04)}.actions{display:grid;gap:12px;margin-top:16px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all}.small{font-size:13px}.split{display:grid;gap:16px}.subsection{margin-top:18px}a{color:var(--brand);font-weight:600;text-decoration:none}@media (max-width:900px){.panel-grid{grid-template-columns:1fr}.toolbar{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <section id="loginView" class="login-shell">
+    <div class="card login-card stack">
+      <div class="stack">
+        <h1>E2EE Chat Admin</h1>
+        <p class="lead">Admin-only console for account review, APK release uploads, security settings, and chat maintenance.</p>
+      </div>
+      <label>Admin username<input id="loginUsername" type="text" autocomplete="username" /></label>
+      <div id="loginPasswordPanel" class="stack">
+        <label>Admin password<input id="loginPassword" type="password" autocomplete="current-password" /></label>
+        <button id="loginButton">Sign in</button>
+      </div>
+      <div id="loginTotpPanel" class="stack hidden">
+        <p class="muted">Password accepted. Enter the current 6-digit code from your authenticator app.</p>
+        <label>TOTP code<input id="loginTotpCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Example: 123456" /></label>
+        <div class="action-row">
+          <button id="loginTotpButton">Verify and sign in</button>
+          <button id="loginBackButton" class="secondary">Back</button>
+        </div>
+      </div>
+      <div id="loginStatus" class="status"></div>
+    </div>
+  </section>
+
+  <main id="dashboardView" class="hidden">
+    <div class="wrap">
+      <section class="card toolbar">
+        <div class="stack" style="gap:6px">
+          <h1>E2EE Chat Admin</h1>
+          <p class="lead">Admin: <strong id="adminName">-</strong></p>
+        </div>
+        <div class="toolbar-actions">
+          <button id="refreshButton" class="secondary">Refresh</button>
+          <button id="logoutButton" class="secondary">Sign out</button>
+        </div>
+      </section>
+
+      <div id="dashboardStatus" class="status"></div>
+
+      <section class="grid summary-grid">
+        <article class="card summary-card"><div class="summary-label">Total storage</div><div id="totalStorage" class="summary-value">-</div></article>
+        <article class="card summary-card"><div class="summary-label">Used storage</div><div id="usedStorage" class="summary-value">-</div></article>
+        <article class="card summary-card"><div class="summary-label">Free storage</div><div id="freeStorage" class="summary-value">-</div></article>
+        <article class="card summary-card"><div class="summary-label">Registered users</div><div id="registeredCount" class="summary-value">0</div></article>
+        <article class="card summary-card"><div class="summary-label">Pending requests</div><div id="pendingCount" class="summary-value">0</div></article>
+        <article class="card summary-card"><div class="summary-label">Online users</div><div id="onlineCount" class="summary-value">0</div></article>
+      </section>
+
+      <section class="grid panel-grid" style="margin-top:16px">
+        <article class="card section">
+          <div class="split">
+            <div>
+              <h2>Pending registration requests</h2>
+              <div id="pendingRequests" class="list"></div>
+            </div>
+            <div class="subsection">
+              <h2>Registered users</h2>
+              <div id="registeredUsers" class="list"></div>
+            </div>
+            <div class="subsection">
+              <h2>Online users</h2>
+              <div id="onlineUsers" class="list"></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card section">
+          <div class="stack"><h2>Android release files</h2></div>
+
+          <div class="stack" style="margin-top:16px">
+            <h3>Stable release</h3>
+            <div id="releaseSummary" class="release-card">
+              <strong>No stable release uploaded yet</strong>
+              <span class="muted">Upload your latest stable APK first.</span>
+            </div>
+            <label>Stable version label<input id="releaseVersion" type="text" placeholder="Auto-detected from the filename, for example v1.1.18" /></label>
+            <label>Select stable APK<input id="releaseFile" type="file" accept=".apk,application/vnd.android.package-archive" /></label>
+            <button id="uploadReleaseButton" type="button">Upload and replace stable release</button>
+            <div id="releaseStatus" class="status"></div>
+          </div>
+
+          <div class="stack" style="margin-top:20px">
+            <h3>Prerelease</h3>
+            <div id="prereleaseSummary" class="release-card">
+              <strong>No prerelease uploaded yet</strong>
+              <span class="muted">A prerelease filename can look like e2ee_chat-prerelease-v1.1.19(pre).apk.</span>
+            </div>
+            <label>Prerelease version label<input id="prereleaseVersion" type="text" placeholder="Auto-detected from the filename, for example v1.1.19" /></label>
+            <label>Select prerelease APK<input id="prereleaseFile" type="file" accept=".apk,application/vnd.android.package-archive" /></label>
+            <button id="uploadPrereleaseButton" type="button" class="secondary">Upload and replace prerelease build</button>
+            <div id="prereleaseStatus" class="status"></div>
+          </div>
+
+          <div class="stack" style="margin-top:20px">
+            <h3>Change admin password</h3>
+            <label>Current password<input id="currentPassword" type="password" autocomplete="current-password" /></label>
+            <label>New password<input id="newPassword" type="password" autocomplete="new-password" /></label>
+            <button id="changePasswordButton">Change password</button>
+          </div>
+
+          <div class="stack" style="margin-top:20px">
+            <h3>Two-factor authentication (TOTP)</h3>
+            <p id="totpStatusText" class="muted">Not enabled. Set it up with your authenticator app as soon as possible.</p>
+            <div class="action-row">
+              <button id="startTotpSetupButton" class="secondary">Set up authenticator app</button>
+              <button id="disableTotpPanelToggle" class="secondary hidden">Disable two-factor authentication</button>
+            </div>
+            <div id="totpSetupPanel" class="stack hidden">
+              <div class="hint-box stack" style="gap:8px">
+                <strong>Manual setup</strong>
+                <p class="muted">Open your authenticator app, choose manual setup or enter setup key, then copy the label and secret shown below.</p>
+              </div>
+              <label>Account label<input id="totpLabel" type="text" readonly class="mono" /></label>
+              <label>Setup secret<input id="totpSecret" type="text" readonly class="mono" /></label>
+              <label>otpauth URI<input id="totpUri" type="text" readonly class="mono" /></label>
+              <label>Confirmation code<input id="totpSetupCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter the current 6-digit code" /></label>
+              <div class="action-row">
+                <button id="confirmTotpSetupButton">Enable two-factor authentication</button>
+                <button id="cancelTotpSetupButton" class="secondary">Cancel</button>
+              </div>
+            </div>
+            <div id="totpDisablePanel" class="stack hidden">
+              <label>Current admin password<input id="disableTotpPassword" type="password" autocomplete="current-password" /></label>
+              <label>Current TOTP code<input id="disableTotpCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter the current 6-digit code" /></label>
+              <div class="action-row">
+                <button id="disableTotpButton" class="danger">Disable two-factor authentication</button>
+                <button id="cancelDisableTotpButton" class="secondary">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="clearFilesButton" class="danger">Delete chat files</button>
+            <button id="clearHistoryButton" class="danger">Delete chat history</button>
+          </div>
+          <p class="muted small" style="margin-top:16px">Project path: <span id="projectPath">-</span></p>
+          <p class="muted small">Total messages: <span id="messageCount">0</span></p>
+          <p class="muted small">Attachment messages: <span id="attachmentCount">0</span></p>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const refs = {
+      loginView: $("loginView"),
+      dashboardView: $("dashboardView"),
+      loginUsername: $("loginUsername"),
+      loginPasswordPanel: $("loginPasswordPanel"),
+      loginPassword: $("loginPassword"),
+      loginButton: $("loginButton"),
+      loginTotpPanel: $("loginTotpPanel"),
+      loginTotpCode: $("loginTotpCode"),
+      loginTotpButton: $("loginTotpButton"),
+      loginBackButton: $("loginBackButton"),
+      loginStatus: $("loginStatus"),
+      adminName: $("adminName"),
+      refreshButton: $("refreshButton"),
+      logoutButton: $("logoutButton"),
+      dashboardStatus: $("dashboardStatus"),
+      totalStorage: $("totalStorage"),
+      usedStorage: $("usedStorage"),
+      freeStorage: $("freeStorage"),
+      registeredCount: $("registeredCount"),
+      pendingCount: $("pendingCount"),
+      onlineCount: $("onlineCount"),
+      registeredUsers: $("registeredUsers"),
+      pendingRequests: $("pendingRequests"),
+      onlineUsers: $("onlineUsers"),
+      clearFilesButton: $("clearFilesButton"),
+      clearHistoryButton: $("clearHistoryButton"),
+      changePasswordButton: $("changePasswordButton"),
+      currentPassword: $("currentPassword"),
+      newPassword: $("newPassword"),
+      releaseSummary: $("releaseSummary"),
+      releaseVersion: $("releaseVersion"),
+      releaseFile: $("releaseFile"),
+      uploadReleaseButton: $("uploadReleaseButton"),
+      releaseStatus: $("releaseStatus"),
+      prereleaseSummary: $("prereleaseSummary"),
+      prereleaseVersion: $("prereleaseVersion"),
+      prereleaseFile: $("prereleaseFile"),
+      uploadPrereleaseButton: $("uploadPrereleaseButton"),
+      prereleaseStatus: $("prereleaseStatus"),
+      projectPath: $("projectPath"),
+      messageCount: $("messageCount"),
+      attachmentCount: $("attachmentCount"),
+      totpStatusText: $("totpStatusText"),
+      startTotpSetupButton: $("startTotpSetupButton"),
+      disableTotpPanelToggle: $("disableTotpPanelToggle"),
+      totpSetupPanel: $("totpSetupPanel"),
+      totpLabel: $("totpLabel"),
+      totpSecret: $("totpSecret"),
+      totpUri: $("totpUri"),
+      totpSetupCode: $("totpSetupCode"),
+      confirmTotpSetupButton: $("confirmTotpSetupButton"),
+      cancelTotpSetupButton: $("cancelTotpSetupButton"),
+      totpDisablePanel: $("totpDisablePanel"),
+      disableTotpPassword: $("disableTotpPassword"),
+      disableTotpCode: $("disableTotpCode"),
+      disableTotpButton: $("disableTotpButton"),
+      cancelDisableTotpButton: $("cancelDisableTotpButton"),
+    };
+
+    let refreshTimer = null;
+    const authState = { pendingTotpChallenge: "", pendingTotpUsername: "" };
+
+    const fmtBytes = (value) => {
+      const bytes = Number(value || 0);
+      if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+      const units = ["B", "KB", "MB", "GB", "TB"];
+      let size = bytes;
+      let index = 0;
+      while (size >= 1024 && index < units.length - 1) {
+        size /= 1024;
+        index += 1;
+      }
+      return `${size.toFixed(size >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+    };
+
+    const fmtCooldown = (ms) => {
+      const totalSeconds = Math.max(Math.ceil(Number(ms || 0) / 1000), 0);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      if (minutes <= 0) return `${seconds} seconds`;
+      if (seconds <= 0) return `${minutes} minutes`;
+      return `${minutes} minutes ${seconds} seconds`;
+    };
+
+    const esc = (value) => String(value ?? "").replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]));
+
+    const setStatus = (element, message, isError = false) => {
+      element.textContent = message || "";
+      element.classList.toggle("error", !!isError);
+    };
+
+    async function api(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      const init = { method: options.method || "GET", credentials: "include", headers };
+      if (options.body instanceof FormData) {
+        init.body = options.body;
+      } else if (options.body !== undefined) {
+        headers.set("Content-Type", "application/json");
+        init.body = JSON.stringify(options.body);
+      }
+      const response = await fetch(path, init);
+      const text = await response.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return null; } })() : null;
+      if (!response.ok) {
+        const error = new Error(data && data.error ? data.error : text || "request_failed");
+        error.code = data && data.error ? data.error : error.message;
+        error.payload = data || null;
+        throw error;
+      }
+      return data || {};
+    }
+
+    const normalizeBrackets = (value) => String(value || "")
+      .replace(/[\uFF08\uFE59\u3010]/g, "(")
+      .replace(/[\uFF09\uFE5A\u3011]/g, ")")
+      .trim();
+
+    const detectReleaseVersion = (value) => {
+      const normalized = normalizeBrackets(value);
+      const match = normalized.match(/v\d+\.\d+\.\d+/i);
+      return match ? `v${match[0].slice(1)}` : "";
+    };
+
+    const detectReleaseChannel = (value) => /(?:^|[^a-z])pre(?:-|\s*)?release(?:[^a-z]|$)|(?:^|[^a-z])prerelease(?:[^a-z]|$)|\(pre\)/i.test(normalizeBrackets(value)) ? "prerelease" : "stable";
+    const releaseVersionLabel = (release) => release?.version_label || release?.version || "-";
+
+    function resetLoginTotpState() {
+      authState.pendingTotpChallenge = "";
+      authState.pendingTotpUsername = "";
+      refs.loginTotpCode.value = "";
+      refs.loginTotpPanel.classList.add("hidden");
+      refs.loginPasswordPanel.classList.remove("hidden");
+    }
+
+    function showLoginTotpStep(username, token) {
+      authState.pendingTotpChallenge = token || "";
+      authState.pendingTotpUsername = username || refs.loginUsername.value.trim();
+      refs.loginUsername.value = authState.pendingTotpUsername;
+      refs.loginPassword.value = "";
+      refs.loginTotpCode.value = "";
+      refs.loginPasswordPanel.classList.add("hidden");
+      refs.loginTotpPanel.classList.remove("hidden");
+      refs.loginTotpCode.focus();
+    }
+
+    function clearTotpSetupPanel() {
+      refs.totpSetupPanel.classList.add("hidden");
+      refs.totpLabel.value = "";
+      refs.totpSecret.value = "";
+      refs.totpUri.value = "";
+      refs.totpSetupCode.value = "";
+    }
+
+    function clearTotpDisablePanel() {
+      refs.totpDisablePanel.classList.add("hidden");
+      refs.disableTotpPassword.value = "";
+      refs.disableTotpCode.value = "";
+    }
+
+    function renderTotpStatus(admin) {
+      const enabled = !!(admin && admin.totp_enabled);
+      refs.totpStatusText.textContent = enabled
+        ? "Enabled. Future admin sign-ins will require a TOTP code from your authenticator app."
+        : "Not enabled. Set it up with your authenticator app as soon as possible.";
+      refs.startTotpSetupButton.textContent = enabled ? "Reset authenticator app setup" : "Set up authenticator app";
+      refs.disableTotpPanelToggle.classList.toggle("hidden", !enabled);
+      if (!enabled) clearTotpDisablePanel();
+    }
+
+    function showLogin() {
+      refs.loginView.classList.remove("hidden");
+      refs.dashboardView.classList.add("hidden");
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+      resetLoginTotpState();
+      clearTotpSetupPanel();
+      clearTotpDisablePanel();
+    }
+
+    function showDashboard() {
+      refs.loginView.classList.add("hidden");
+      refs.dashboardView.classList.remove("hidden");
+      if (!refreshTimer) refreshTimer = setInterval(loadOverview, 15000);
+    }
+
+    function renderRelease(target, release, emptyTitle, emptyBody) {
+      if (!release || !release.version || !release.file_name) {
+        target.innerHTML = `<strong>${esc(emptyTitle)}</strong><span class="muted">${esc(emptyBody)}</span>`;
+        return;
+      }
+      target.innerHTML = `<strong>Current version: ${esc(releaseVersionLabel(release))}</strong><span class="muted">Stored filename: ${esc(release.file_name)}</span><span class="muted">Original filename: ${esc(release.original_name || release.file_name)}</span><span class="muted">File size: ${fmtBytes(release.file_size)}</span><span class="muted">Uploaded at: ${release.uploaded_at ? new Date(release.uploaded_at).toLocaleString() : "-"}</span><a href="${release.download_url}" target="_blank" rel="noreferrer">Download current installer</a>`;
+    }
+
+    function renderListItem(html) {
+      const row = document.createElement("div");
+      row.className = "list-item";
+      row.innerHTML = html;
+      return row;
+    }
+
+    function renderPending(items) {
+      refs.pendingRequests.innerHTML = "";
+      if (!items.length) {
+        refs.pendingRequests.appendChild(renderListItem(`<div class="muted">No pending registration requests.</div>`));
+        return;
+      }
+      for (const item of items) {
+        refs.pendingRequests.appendChild(renderListItem(`<div class="row-head"><strong>${esc(item.requested_username)}</strong><span class="capsule">${new Date(item.created_at).toLocaleString()}</span></div><div class="muted small">IP: ${esc(item.request_ip || "-")}</div><div class="action-row"><button class="approveRegistration" data-id="${item.id}">Approve</button><button class="ghost rejectRegistration" data-id="${item.id}">Reject</button></div>`));
+      }
+    }
+
+    function renderRegistered(items, onlineCodes) {
+      refs.registeredUsers.innerHTML = "";
+      if (!items.length) {
+        refs.registeredUsers.appendChild(renderListItem(`<div class="muted">No registered users yet.</div>`));
+        return;
+      }
+      for (const item of items) {
+        const online = onlineCodes.has(item.user_code);
+        const flags = item.is_admin ? " · admin" : "";
+        refs.registeredUsers.appendChild(renderListItem(`<div class="row-head"><div><strong>${esc(item.username)}</strong></div><span class="capsule">${online ? "Online" : "Offline"}</span></div><div class="muted small">User code: ${esc(item.user_code)}${flags}</div><div class="muted small">Last IP: ${esc(item.last_login_ip || "-")}</div><div class="action-row"><button class="ghost renameUser" data-id="${item.id}" data-username="${esc(item.username)}">Rename user</button></div>`));
+      }
+    }
+
+    function renderOnline(items) {
+      refs.onlineUsers.innerHTML = "";
+      if (!items.length) {
+        refs.onlineUsers.appendChild(renderListItem(`<div class="muted">No users are currently online.</div>`));
+        return;
+      }
+      for (const item of items) {
+        refs.onlineUsers.appendChild(renderListItem(`<div class="row-head"><strong>${esc(item.username)}</strong><span class="capsule">${item.is_admin ? "Admin" : "Online"}</span></div><div class="muted small">User code: ${esc(item.user_code || "-")}</div><div class="muted small">IP: ${esc(item.ip || "-")}</div>`));
+      }
+    }
+
+    function renderOverview(data) {
+      const online = Array.isArray(data.online_users) ? data.online_users : [];
+      const registered = Array.isArray(data.registered_users) ? data.registered_users : [];
+      const pending = Array.isArray(data.pending_registration_requests) ? data.pending_registration_requests : [];
+      refs.adminName.textContent = data.admin?.username || "-";
+      renderTotpStatus(data.admin || null);
+      refs.totalStorage.textContent = fmtBytes(data.storage?.total_bytes);
+      refs.usedStorage.textContent = fmtBytes(data.storage?.used_bytes);
+      refs.freeStorage.textContent = fmtBytes(data.storage?.available_bytes);
+      refs.registeredCount.textContent = String(registered.length);
+      refs.pendingCount.textContent = String(pending.length);
+      refs.onlineCount.textContent = String(data.online_count || 0);
+      refs.projectPath.textContent = data.storage?.project_path || "-";
+      refs.messageCount.textContent = String(data.total_messages || 0);
+      refs.attachmentCount.textContent = String(data.attachment_messages || 0);
+      renderRelease(refs.releaseSummary, data.app_release || null, "No stable release uploaded yet", "Upload your latest stable APK first.");
+      renderRelease(refs.prereleaseSummary, data.app_prerelease || null, "No prerelease uploaded yet", "A prerelease filename can look like e2ee_chat-prerelease-v1.1.19(pre).apk.");
+      const onlineCodes = new Set(online.map((item) => item.user_code));
+      renderPending(pending);
+      renderRegistered(registered, onlineCodes);
+      renderOnline(online);
+    }
+
+    async function loadOverview() {
+      try {
+        const data = await api("/manage_api/overview");
+        renderOverview(data);
+        setStatus(refs.dashboardStatus, `Last refreshed: ${new Date().toLocaleTimeString()}`);
+      } catch (error) {
+        if (String(error.message) === "unauthorized" || String(error.message) === "session_expired") {
+          showLogin();
+          setStatus(refs.loginStatus, "Session expired. Sign in again.", true);
+          return;
+        }
+        setStatus(refs.dashboardStatus, `Refresh failed: ${error.message}`, true);
+      }
+    }
+
+    async function login() {
+      refs.loginButton.disabled = true;
+      setStatus(refs.loginStatus, "Signing in...");
+      try {
+        const data = await api("/manage_api/login", {
+          method: "POST",
+          body: { username: refs.loginUsername.value.trim(), password: refs.loginPassword.value },
+        });
+        if (data.requires_totp) {
+          showLoginTotpStep(data.username, data.challenge_token);
+          setStatus(refs.loginStatus, "Password accepted. Enter the current TOTP code.");
+          return;
+        }
+        refs.loginPassword.value = "";
+        showDashboard();
+        await loadOverview();
+        setStatus(refs.loginStatus, "");
+      } catch (error) {
+        if (error.code === "cooldown_active") {
+          const retry = error.payload && error.payload.retry_after_ms ? fmtCooldown(error.payload.retry_after_ms) : "5 minutes";
+          setStatus(refs.loginStatus, `Too many failed attempts. Try again in ${retry}.`, true);
+        } else if (error.code === "invalid_credentials") {
+          const left = Number(error.payload && error.payload.remaining_attempts);
+          const tail = Number.isFinite(left) && left > 0 ? ` ${left} attempts remaining.` : "";
+          setStatus(refs.loginStatus, `Incorrect username or password.${tail}`.trim(), true);
+        } else {
+          setStatus(refs.loginStatus, `Sign-in failed: ${error.message}`, true);
+        }
+      } finally {
+        refs.loginButton.disabled = false;
+      }
+    }
+
+    async function verifyLoginTotp() {
+      refs.loginTotpButton.disabled = true;
+      setStatus(refs.loginStatus, "Verifying TOTP code...");
+      try {
+        await api("/manage_api/login_totp", {
+          method: "POST",
+          body: { challenge_token: authState.pendingTotpChallenge, code: refs.loginTotpCode.value.trim() },
+        });
+        resetLoginTotpState();
+        showDashboard();
+        await loadOverview();
+        setStatus(refs.loginStatus, "");
+      } catch (error) {
+        if (error.code === "invalid_totp_code") {
+          const left = Number(error.payload && error.payload.remaining_attempts);
+          const tail = Number.isFinite(left) && left > 0 ? ` ${left} attempts remaining.` : "";
+          setStatus(refs.loginStatus, `Incorrect TOTP code.${tail}`.trim(), true);
+        } else if (error.code === "totp_challenge_locked" || error.code === "invalid_or_expired_challenge") {
+          resetLoginTotpState();
+          setStatus(refs.loginStatus, "This TOTP challenge expired. Sign in again with your username and password.", true);
+        } else {
+          setStatus(refs.loginStatus, `TOTP verification failed: ${error.message}`, true);
+        }
+      } finally {
+        refs.loginTotpButton.disabled = false;
+      }
+    }
+
+    async function logout() {
+      try {
+        await api("/manage_api/logout", { method: "POST", body: {} });
+      } catch {}
+      showLogin();
+    }
+
+    function releaseFieldGroup(channel) {
+      return channel === "prerelease"
+        ? {
+            version: refs.prereleaseVersion,
+            file: refs.prereleaseFile,
+            button: refs.uploadPrereleaseButton,
+            status: refs.prereleaseStatus,
+            successTitle: "Uploaded prerelease build",
+          }
+        : {
+            version: refs.releaseVersion,
+            file: refs.releaseFile,
+            button: refs.uploadReleaseButton,
+            status: refs.releaseStatus,
+            successTitle: "Uploaded stable release",
+          };
+    }
+
+    async function uploadRelease(channel) {
+      const fields = releaseFieldGroup(channel);
+      const file = fields.file.files && fields.file.files[0];
+      if (!file) {
+        setStatus(fields.status, "Select an APK file first.", true);
+        setStatus(refs.dashboardStatus, "Select an APK file first.", true);
+        return;
+      }
+
+      const version = detectReleaseVersion(fields.version.value.trim()) || detectReleaseVersion(file.name);
+      if (!/^v\d+\.\d+\.\d+$/.test(version)) {
+        const message = channel === "prerelease"
+          ? "Upload a prerelease APK whose filename includes a version like v1.1.26(pre) or v1.1.26, or enter the version manually."
+          : "Upload an APK whose filename includes a version like v1.1.18, or enter the version manually.";
+        setStatus(fields.status, message, true);
+        setStatus(refs.dashboardStatus, message, true);
+        return;
+      }
+
+      fields.button.disabled = true;
+      const uploadMessage = channel === "prerelease" ? "Uploading prerelease build..." : "Uploading stable release...";
+      setStatus(fields.status, uploadMessage);
+      setStatus(refs.dashboardStatus, uploadMessage);
+
+      try {
+        const form = new FormData();
+        form.append("channel", channel);
+        form.append("version", version);
+        form.append("apk", file);
+        const data = await api("/manage_api/app_release", { method: "POST", body: form });
+        renderRelease(refs.releaseSummary, data.app_releases?.stable || null, "No stable release uploaded yet", "Upload your latest stable APK first.");
+        renderRelease(refs.prereleaseSummary, data.app_releases?.prerelease || null, "No prerelease uploaded yet", "A prerelease filename can look like e2ee_chat-prerelease-v1.1.19(pre).apk.");
+        fields.file.value = "";
+        const successMessage = `${fields.successTitle}: ${channel === "prerelease" ? `${version}(pre)` : version}`;
+        setStatus(fields.status, successMessage);
+        setStatus(refs.dashboardStatus, successMessage);
+      } catch (error) {
+        console.error("uploadRelease failed", error);
+        const uploadErrorText =
+          error.code === "invalid_version" ? "The server rejected the version label. Check the filename or the version field format." :
+          error.code === "apk_only" ? "The server only accepts APK files." :
+          error.code === "no_file" ? "The server did not receive a file. Re-select the APK and try again." :
+          error.code === "unauthorized" || error.code === "session_expired" ? "Session expired. Refresh the page and sign in again." :
+          `Upload failed: ${error.message}`;
+        setStatus(fields.status, uploadErrorText, true);
+        setStatus(refs.dashboardStatus, uploadErrorText, true);
+      } finally {
+        fields.button.disabled = false;
+      }
+    }
+
+    async function clearFiles() {
+      if (!confirm("Delete every chat attachment file? This affects all users.")) return;
+      refs.clearFilesButton.disabled = true;
+      try {
+        const data = await api("/manage_api/clear_files", { method: "POST", body: {} });
+        setStatus(refs.dashboardStatus, `Deleted ${data.deletedFiles || 0} files and updated ${data.changedMessages || 0} messages.`);
+        await loadOverview();
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `File cleanup failed: ${error.message}`, true);
+      } finally {
+        refs.clearFilesButton.disabled = false;
+      }
+    }
+
+    async function clearHistory() {
+      if (!confirm("Delete all chat history? This cannot be undone.")) return;
+      refs.clearHistoryButton.disabled = true;
+      try {
+        const data = await api("/manage_api/clear_history", { method: "POST", body: {} });
+        setStatus(refs.dashboardStatus, `Deleted ${data.deletedMessages || 0} messages and ${data.deletedFiles || 0} files.`);
+        await loadOverview();
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `History cleanup failed: ${error.message}`, true);
+      } finally {
+        refs.clearHistoryButton.disabled = false;
+      }
+    }
+
+    async function changePassword() {
+      if (!refs.currentPassword.value || !refs.newPassword.value) {
+        setStatus(refs.dashboardStatus, "Enter both the current password and the new password.", true);
+        return;
+      }
+      refs.changePasswordButton.disabled = true;
+      try {
+        await api("/manage_api/change_password", {
+          method: "POST",
+          body: { current_password: refs.currentPassword.value, new_password: refs.newPassword.value },
+        });
+        refs.currentPassword.value = "";
+        refs.newPassword.value = "";
+        setStatus(refs.dashboardStatus, "Admin password updated.");
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `Password change failed: ${error.message}`, true);
+      } finally {
+        refs.changePasswordButton.disabled = false;
+      }
+    }
+
+    async function startTotpSetup() {
+      refs.startTotpSetupButton.disabled = true;
+      clearTotpDisablePanel();
+      setStatus(refs.dashboardStatus, "Generating TOTP setup secret...");
+      try {
+        const data = await api("/manage_api/totp/setup", { method: "POST", body: {} });
+        refs.totpLabel.value = data.label || "";
+        refs.totpSecret.value = data.secret || "";
+        refs.totpUri.value = data.otpauth_url || "";
+        refs.totpSetupCode.value = "";
+        refs.totpSetupPanel.classList.remove("hidden");
+        setStatus(refs.dashboardStatus, "TOTP setup secret generated. Add it to your authenticator app, then confirm with the current code.");
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `TOTP setup failed: ${error.message}`, true);
+      } finally {
+        refs.startTotpSetupButton.disabled = false;
+      }
+    }
+
+    async function confirmTotpSetup() {
+      const code = refs.totpSetupCode.value.trim();
+      if (!code) {
+        setStatus(refs.dashboardStatus, "Enter the current 6-digit code from your authenticator app.", true);
+        return;
+      }
+      refs.confirmTotpSetupButton.disabled = true;
+      try {
+        const data = await api("/manage_api/totp/enable", { method: "POST", body: { code } });
+        clearTotpSetupPanel();
+        renderTotpStatus(data.admin || null);
+        setStatus(refs.dashboardStatus, "Two-factor authentication enabled.");
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `Could not enable two-factor authentication: ${error.message}`, true);
+      } finally {
+        refs.confirmTotpSetupButton.disabled = false;
+      }
+    }
+
+    function toggleDisableTotpPanel() {
+      clearTotpSetupPanel();
+      refs.totpDisablePanel.classList.toggle("hidden");
+    }
+
+    async function disableTotp() {
+      if (!refs.disableTotpPassword.value || !refs.disableTotpCode.value.trim()) {
+        setStatus(refs.dashboardStatus, "Enter the current admin password and current TOTP code first.", true);
+        return;
+      }
+      refs.disableTotpButton.disabled = true;
+      try {
+        const data = await api("/manage_api/totp/disable", {
+          method: "POST",
+          body: { current_password: refs.disableTotpPassword.value, code: refs.disableTotpCode.value.trim() },
+        });
+        clearTotpDisablePanel();
+        renderTotpStatus(data.admin || null);
+        setStatus(refs.dashboardStatus, "Two-factor authentication disabled.");
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `Could not disable two-factor authentication: ${error.message}`, true);
+      } finally {
+        refs.disableTotpButton.disabled = false;
+      }
+    }
+
+    async function approveRegistration(id) {
+      setStatus(refs.dashboardStatus, "Approving registration request...");
+      try {
+        await api(`/manage_api/registrations/${id}/approve`, { method: "POST", body: {} });
+        await loadOverview();
+        setStatus(refs.dashboardStatus, "Registration request approved.");
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `Approval failed: ${error.message}`, true);
+      }
+    }
+
+    async function rejectRegistration(id) {
+      const note = prompt("Rejection note (optional)", "");
+      if (note === null) return;
+      setStatus(refs.dashboardStatus, "Rejecting registration request...");
+      try {
+        await api(`/manage_api/registrations/${id}/reject`, { method: "POST", body: { note } });
+        await loadOverview();
+        setStatus(refs.dashboardStatus, "Registration request rejected.");
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `Rejection failed: ${error.message}`, true);
+      }
+    }
+
+    async function renameUser(id, currentName) {
+      const username = prompt("Enter a new username", currentName || "");
+      if (username === null) return;
+      if (!username.trim()) {
+        setStatus(refs.dashboardStatus, "Username cannot be empty.", true);
+        return;
+      }
+      setStatus(refs.dashboardStatus, "Renaming user...");
+      try {
+        await api(`/manage_api/users/${id}/username`, { method: "POST", body: { username: username.trim() } });
+        await loadOverview();
+        setStatus(refs.dashboardStatus, "Username updated.");
+      } catch (error) {
+        setStatus(refs.dashboardStatus, `Rename failed: ${error.message}`, true);
+      }
+    }
+
+    function bindReleaseFileAutoFill(fileInput, versionInput, channel) {
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files && fileInput.files[0];
+        const detected = detectReleaseVersion(file ? file.name : "");
+        if (!detected) return;
+        versionInput.value = detected;
+        const channelText = detectReleaseChannel(file ? file.name : "") === "prerelease" || channel === "prerelease" ? "prerelease" : "stable";
+        const targetStatus = channel === "prerelease" ? refs.prereleaseStatus : refs.releaseStatus;
+        setStatus(targetStatus, `Detected ${channelText} version: ${detected}`);
+        setStatus(refs.dashboardStatus, `Detected ${channelText} version: ${detected}`);
+      });
+    }
+
+    refs.pendingRequests.addEventListener("click", (event) => {
+      const target = event.target.closest("button");
+      if (!target) return;
+      if (target.classList.contains("approveRegistration")) approveRegistration(target.dataset.id);
+      if (target.classList.contains("rejectRegistration")) rejectRegistration(target.dataset.id);
+    });
+
+    refs.registeredUsers.addEventListener("click", (event) => {
+      const target = event.target.closest("button.renameUser");
+      if (!target) return;
+      renameUser(target.dataset.id, target.dataset.username || "");
+    });
+
+    refs.loginButton.addEventListener("click", login);
+    refs.loginTotpButton.addEventListener("click", verifyLoginTotp);
+    refs.loginBackButton.addEventListener("click", () => {
+      resetLoginTotpState();
+      setStatus(refs.loginStatus, "");
+    });
+    refs.loginPassword.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") login();
+    });
+    refs.loginTotpCode.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") verifyLoginTotp();
+    });
+    refs.refreshButton.addEventListener("click", loadOverview);
+    refs.logoutButton.addEventListener("click", logout);
+    refs.uploadReleaseButton.addEventListener("click", () => uploadRelease("stable"));
+    refs.uploadPrereleaseButton.addEventListener("click", () => uploadRelease("prerelease"));
+    refs.clearFilesButton.addEventListener("click", clearFiles);
+    refs.clearHistoryButton.addEventListener("click", clearHistory);
+    refs.changePasswordButton.addEventListener("click", changePassword);
+    refs.startTotpSetupButton.addEventListener("click", startTotpSetup);
+    refs.confirmTotpSetupButton.addEventListener("click", confirmTotpSetup);
+    refs.cancelTotpSetupButton.addEventListener("click", clearTotpSetupPanel);
+    refs.disableTotpPanelToggle.addEventListener("click", toggleDisableTotpPanel);
+    refs.disableTotpButton.addEventListener("click", disableTotp);
+    refs.cancelDisableTotpButton.addEventListener("click", clearTotpDisablePanel);
+
+    bindReleaseFileAutoFill(refs.releaseFile, refs.releaseVersion, "stable");
+    bindReleaseFileAutoFill(refs.prereleaseFile, refs.prereleaseVersion, "prerelease");
+
+    (async function bootstrap() {
+      try {
+        await api("/manage_api/me");
+        showDashboard();
+        await loadOverview();
+      } catch {
+        showLogin();
+      }
+    })();
+  </script>
+</body>
+</html>

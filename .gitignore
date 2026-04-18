@@ -1,0 +1,47 @@
+codex.md
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+
+# Node
+e2ee_chat_web/node_modules/
+npm-debug.log*
+
+# Web runtime data
+e2ee_chat_web/data/
+e2ee_chat_web/uploads/
+e2ee_chat_web/app_release/
+e2ee_chat_web/*.log
+e2ee_chat_web/*.save
+
+# Android local state and build output
+e2ee_chat_app/.android-home/
+e2ee_chat_app/.gradle/
+e2ee_chat_app/.gradle-home/
+e2ee_chat_app/.gradle-home-camerax/
+e2ee_chat_app/.idea/
+e2ee_chat_app/.kotlin/
+e2ee_chat_app/build/
+e2ee_chat_app/app/build/
+e2ee_chat_app/local.properties
+
+# Android signing and Firebase
+e2ee_chat_app/keystore.properties
+e2ee_chat_app/*.jks
+e2ee_chat_app/*.keystore
+e2ee_chat_app/*.p12
+e2ee_chat_app/app/google-services.json
+
+# Android artifacts
+*.apk
+*.aab
+*.apks
+*.dm
+
+# Secrets / env
+.env
+.env.*
+!.env.example
