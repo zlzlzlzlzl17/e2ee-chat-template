@@ -23,6 +23,15 @@ The legacy browser chat client is intentionally disabled in the current template
 
 See `docs/APP_FEATURES.md` for a fuller Android/app capability summary and `docs/E2EE_IMPLEMENTATION.md` for the current shared-secret encryption model and its limits.
 
+## Project Status
+
+This repository is an experimental template extracted from a personal self-hosted chat project.
+
+The original application was developed for a personal/family use case. This public version has been cleaned up and converted into a reusable template, with private configuration, credentials, deployment data, and personal assets removed.
+
+The template has not been fully end-to-end tested after the cleanup process. It should be treated as a reference implementation or starter project, not as a production-ready application.
+
+Before using it for a real deployment, review the code, replace all configuration values, set up your own Firebase/FCM and signing keys, and test the backend and Android app in your own environment.
 
 ## Important Warnings
 
