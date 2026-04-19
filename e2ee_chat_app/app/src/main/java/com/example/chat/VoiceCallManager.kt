@@ -335,6 +335,7 @@ class VoiceCallManager(
                 availableAudioRoutes = availableRoutes
             )
         )
+        E2eeChatTelecom.requestAudioRoute(resolvedRoute)
         if (audioSessionActive) applyCurrentAudioRoute()
     }
 

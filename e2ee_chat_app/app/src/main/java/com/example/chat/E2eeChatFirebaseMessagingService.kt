@@ -24,6 +24,19 @@ class E2eeChatFirebaseMessagingService : FirebaseMessagingService() {
                 )
                 if (invite.conversationId > 0L && invite.peerUsername.isNotBlank()) {
                     ChatPreferences(applicationContext).setPendingIncomingCall(invite)
+                    VoiceCallNotificationService.sync(
+                        context = this,
+                        state = VoiceCallUiState(
+                            phase = VoiceCallPhase.INCOMING,
+                            conversationId = invite.conversationId,
+                            peerUserCode = invite.peerUserCode,
+                            peerUsername = invite.peerUsername,
+                            isIncoming = true,
+                            statusMessage = "incoming",
+                        ),
+                        isMinimized = false,
+                        isAppInForeground = false,
+                    )
                     NotificationCenter.showIncomingCallNotification(
                         context = this,
                         invite = invite,
@@ -38,6 +51,12 @@ class E2eeChatFirebaseMessagingService : FirebaseMessagingService() {
                 if (conversationId > 0L && prefs.pendingIncomingCall()?.conversationId == conversationId) {
                     prefs.setPendingIncomingCall(null)
                 }
+                VoiceCallNotificationService.sync(
+                    context = this,
+                    state = VoiceCallUiState(),
+                    isMinimized = false,
+                    isAppInForeground = false,
+                )
                 NotificationCenter.clearIncomingCallNotification(this)
                 return
             }

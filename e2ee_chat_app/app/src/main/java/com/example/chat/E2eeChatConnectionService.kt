@@ -93,6 +93,11 @@ object E2eeChatTelecom {
             else -> Unit
         }
     }
+    
+    fun requestAudioRoute(route: VoiceAudioRoute) {
+        currentConnection?.requestAudioRoute(route)
+    }
+
 
     internal fun onCreateIncomingConnection(context: Context, request: ConnectionRequest): Connection {
         val connection = E2eeChatConnection(context.applicationContext, isIncoming = true)
@@ -284,6 +289,16 @@ internal class E2eeChatConnection(
 
     fun destroySafely() {
         runCatching { destroy() }
+    }
+
+    @Suppress("DEPRECATION")
+    fun requestAudioRoute(route: VoiceAudioRoute) {
+        val telecomRoute = when (route) {
+            VoiceAudioRoute.BLUETOOTH -> CallAudioState.ROUTE_BLUETOOTH
+            VoiceAudioRoute.SPEAKER -> CallAudioState.ROUTE_SPEAKER
+            VoiceAudioRoute.EARPIECE -> CallAudioState.ROUTE_EARPIECE
+        }
+        runCatching { setAudioRoute(telecomRoute) }
     }
 
     override fun onAnswer() {
