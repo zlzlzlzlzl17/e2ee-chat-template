@@ -85,7 +85,3 @@ Do not commit:
 - any `.jks` or `.keystore` file
 - build output, Gradle caches, or `node_modules`
 
-## Compatibility
-
-This template uses the current naming and protocol scheme and is intended for fresh deployments.
-It is not a drop-in upgrade for the old `familychat` repository or its legacy key-prefix/data layout.
