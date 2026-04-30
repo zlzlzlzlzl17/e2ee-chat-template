@@ -61,4 +61,4 @@ It is a poor fit for:
 
 - [DEPLOYMENT.md](DEPLOYMENT.md): deployment and operations
 - [SECURITY.md](SECURITY.md): E2EE design, trust boundaries, limitations, and non-goals
-- [e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md](e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md): Android release-signing guide in Chinese
+- [e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md](e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md): Android release-signing guide

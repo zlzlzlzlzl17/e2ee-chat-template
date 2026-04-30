@@ -1,10 +1,10 @@
-# Android Release 签名打包指南
+# Android Release Signing Guide
 
-这个模板已经支持通过 `keystore.properties` 配置 release 签名。
+This template already supports release signing through `keystore.properties`.
 
-## 1. 准备 keystore
+## 1. Create a Keystore
 
-在 `e2eechat_app` 目录生成你的 release keystore：
+Generate your release keystore inside the `e2eechat_app` directory:
 
 ```powershell
 cd e2eechat_app
@@ -16,15 +16,15 @@ keytool -genkeypair -v `
   -validity 10000
 ```
 
-建议：
+Recommendations:
 
-- 使用强密码
-- 妥善备份 `release-keystore.jks`
-- 不要把 keystore 提交到 GitHub
+- Use a strong password.
+- Back up `release-keystore.jks` safely.
+- Do not commit the keystore to GitHub.
 
-## 2. 创建 keystore.properties
+## 2. Create `keystore.properties`
 
-复制 `keystore.properties.example` 为 `keystore.properties`，填入真实值：
+Copy `keystore.properties.example` to `keystore.properties` and fill in the real values:
 
 ```properties
 storeFile=release-keystore.jks
@@ -33,48 +33,48 @@ keyAlias=e2eechat
 keyPassword=your-key-password
 ```
 
-`keystore.properties` 已被忽略，不应提交。
+`keystore.properties` is already ignored and should not be committed.
 
-## 3. 打包 release APK
+## 3. Build a Release APK
 
 ```powershell
 cd e2eechat_app
 .\gradlew.bat assembleRelease
 ```
 
-通常输出位置：
+Typical output path:
 
 ```text
 e2eechat_app\app\build\outputs\apk\release\
 ```
 
-## 4. 打包 AAB
+## 4. Build an AAB
 
 ```powershell
 cd e2eechat_app
 .\gradlew.bat bundleRelease
 ```
 
-通常输出位置：
+Typical output path:
 
 ```text
 e2eechat_app\app\build\outputs\bundle\release\
 ```
 
-## 5. 常见问题
+## 5. Common Issues
 
-### `keytool` 不是内部命令
+### `keytool` is not recognized
 
-说明本机没有把 JDK `bin` 加到 PATH。可以直接使用 JDK 目录里的 `keytool.exe`。
+Your JDK `bin` directory is probably not in `PATH`. You can also run `keytool.exe` directly from the JDK installation folder.
 
 ### `Keystore file not found`
 
-检查 `keystore.properties` 里的 `storeFile` 路径是否正确。
+Check whether the `storeFile` path in `keystore.properties` is correct.
 
 ### `Keystore was tampered with, or password was incorrect`
 
-通常是 `storePassword` 错误，或者选错了 keystore 文件。
+This usually means `storePassword` is wrong, or the wrong keystore file was selected.
 
 ### `Cannot recover key`
 
-通常是 `keyAlias` 或 `keyPassword` 错误。
+This usually means `keyAlias` or `keyPassword` is wrong.

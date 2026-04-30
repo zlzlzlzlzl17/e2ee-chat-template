@@ -201,7 +201,7 @@ Optional Android setup:
 - If you use FCM, place the real `google-services.json` in `e2eechat_app/app/google-services.json`.
 - If you want signed release builds, create `e2eechat_app/keystore.properties`.
 - See `e2eechat_app/keystore.properties.example` for the required keys.
-- See `e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md` for the existing signing walkthrough.
+- See `e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md` for the release-signing walkthrough.
 
 ## 9. Build the Android App
 
