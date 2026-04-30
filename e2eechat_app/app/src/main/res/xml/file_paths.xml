@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path
+        name="shared_cache"
+        path="shared/" />
+    <files-path
+        name="update_files"
+        path="updates/" />
+</paths>

@@ -1,0 +1,30 @@
+transfer.md
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Android workspace
+/e2eechat_app/.android-home/
+/e2eechat_app/.gradle/
+/e2eechat_app/.gradle-home/
+/e2eechat_app/.gradle-home-camerax/
+/e2eechat_app/.idea/
+/e2eechat_app/.kotlin/
+/e2eechat_app/build/
+/e2eechat_app/app/build/
+/e2eechat_app/local.properties
+/e2eechat_app/keystore.properties
+/e2eechat_app/template.properties
+/e2eechat_app/app/google-services.json
+/e2eechat_app/*.jks
+/e2eechat_app/*.keystore
+
+# Node / server runtime data
+/e2eechat_web/node_modules/
+/e2eechat_web/data/
+/e2eechat_web/uploads/
+/e2eechat_web/app_release/
+/e2eechat_web/.env
+/e2eechat_web/server.js.save
