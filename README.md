@@ -1,87 +1,64 @@
 # E2EE Chat Template
 
-Self-hosted end-to-end encrypted chat template with:
+Self-hosted chat template for fresh deployments, built around:
 
-- `e2eechat_web`: Node.js / Express / SQLite backend and management portal
-- `e2eechat_app`: Android Compose client
-- Web chat intentionally disabled; this template ships the app API and the management portal only
+- `e2eechat_app`: Android client
+- `e2eechat_web`: Node.js / Express / SQLite backend
+- built-in management portal on a separate host such as `manage.example.com`
+
+The repository is designed for people who want an Android-first, self-hosted private chat stack with end-to-end encrypted messaging and attachments. The browser chat UI is intentionally disabled in this template; the main client is the Android app.
+
+## Project Overview
+
+This project combines:
+
+- an Android Compose app for messaging, attachments, notifications, and voice calls
+- a Node.js backend for authentication, message routing, file storage, push delivery, and management APIs
+- a management portal for registrations, account review, APK distribution, and admin operations
+
+It is intended for fresh installations of the current `e2eechat` format, not as a drop-in upgrade for the older `familychat` repository layout.
 
 ## Features
 
 - Direct chats and group chats
-- Image, file, and voice-message attachments
-- Device identity, public keys, prekeys, and sender-key packaging
-- Read states, message recall, and APK upload from the management portal
-- TOTP support for management admins
+- End-to-end encrypted text messages
+- Encrypted image, file, and audio attachments
+- Per-device identity keys, fingerprints, and safety-code change notices
+- Signed prekeys and one-time prekeys for direct-message setup
+- Group sender-key distribution per recipient device
 - FCM push notifications and WebRTC voice calls
+- Management portal with TOTP support
+- APK upload and release distribution from the management portal
 
-## Security Note
+## E2EE Overview
 
-This repository is meant for personal or small-scale self-hosted deployments.
-It is not a professionally audited Signal-class cryptography product, so do not market it as one.
+At a high level, the current Android app handles encryption on the client side:
 
-## Quick Start
+- Each device creates a long-lived signing identity and publishes signed key material for other devices.
+- Direct chats use a client-side session setup plus per-message key derivation for encrypted payloads.
+- Group chats use a sender-key model. A sender key is wrapped separately for recipient devices and then used to encrypt group messages.
+- Attachments use a random file key. The file payload and its metadata are encrypted on the client, and the file key is wrapped through the direct or group E2EE channel.
+- The server stores ciphertext, public identity material, and delivery metadata, but it is not supposed to hold the plaintext message body or plaintext attachment content.
 
-### 1. Configure the backend
+This is a custom implementation intended for practical self-hosting, not a claim of audited Signal-equivalent protocol assurance. See [SECURITY.md](SECURITY.md) for the trust model, implementation notes, and limitations.
 
-Copy `e2eechat_web/.env.example` to `e2eechat_web/.env` and set at least:
+## Use Cases
 
-- `JWT_SECRET`
-- `MANAGE_HOST`
-- `MANAGE_INITIAL_USERNAME`
-- `MANAGE_INITIAL_PASSWORD`
+This template is a good fit for:
 
-On a fresh database, the server uses `MANAGE_INITIAL_USERNAME` and `MANAGE_INITIAL_PASSWORD` to bootstrap the first management admin.
+- family or private community servers
+- small teams, clubs, or friend groups that want to self-host
+- Android-first private chat deployments
+- learning, experimentation, and custom product prototyping
 
-Sample users are disabled by default. Set `SEED_SAMPLE_USERS=true` only if you want local demo accounts such as `alice`, `bob`, and `carol`.
+It is a poor fit for:
 
-### 2. Start the backend
+- high-risk environments that require audited, formally reviewed secure messaging
+- deployments that need strong metadata protection
+- situations where you cannot trust the server operator at all
 
-```bash
-cd e2eechat_web
-npm install
-npm start
-```
+## Documentation
 
-### 3. Configure the Android client
-
-Copy `e2eechat_app/template.properties.example` to `e2eechat_app/template.properties`:
-
-```properties
-defaultServerUrl=https://chat.example.com
-```
-
-### 4. Optional integrations
-
-- Firebase / FCM:
-  Place the real `google-services.json` at `e2eechat_app/app/google-services.json` and fill the FCM service-account values in `e2eechat_web/.env`.
-- Release signing:
-  Put your real signing config in `e2eechat_app/keystore.properties`.
-  See `e2eechat_app/keystore.properties.example` for the expected format.
-  A Chinese signing guide is available at `e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md`.
-
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for a production-oriented deployment guide, including:
-
-- domain layout
-- backend setup
-- `systemd` service example
-- reverse proxy example
-- Android client configuration
-- first-run and hardening checklist
-
-## Repository Hygiene
-
-Do not commit:
-
-- `e2eechat_web/.env`
-- `e2eechat_web/data/`
-- `e2eechat_web/uploads/`
-- `e2eechat_web/app_release/`
-- `e2eechat_app/template.properties`
-- `e2eechat_app/keystore.properties`
-- `e2eechat_app/app/google-services.json`
-- any `.jks` or `.keystore` file
-- build output, Gradle caches, or `node_modules`
-
+- [DEPLOYMENT.md](DEPLOYMENT.md): deployment and operations
+- [SECURITY.md](SECURITY.md): E2EE design, trust boundaries, limitations, and non-goals
+- [e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md](e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md): Android release-signing guide in Chinese
