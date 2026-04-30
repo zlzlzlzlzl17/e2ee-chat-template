@@ -1,74 +1,91 @@
 # E2EE Chat Template
 
-一个可上传到 GitHub 的自托管聊天模板，包含：
+Self-hosted end-to-end encrypted chat template with:
 
-- `e2eechat_web`: Node.js / Express / SQLite 服务端与管理后台
-- `e2eechat_app`: Android Compose 客户端
-- Web 聊天页默认禁用，只保留管理后台和 App API
+- `e2eechat_web`: Node.js / Express / SQLite backend and management portal
+- `e2eechat_app`: Android Compose client
+- Web chat intentionally disabled; this template ships the app API and the management portal only
 
-## 特点
+## Features
 
-- 单聊、群聊、图片、文件、语音消息
-- 设备身份、公钥、prekey、群发件人密钥封装
-- 已读状态、撤回、更新包上传、TOTP 管理后台
-- FCM 推送与 WebRTC 语音通话
+- Direct chats and group chats
+- Image, file, and voice-message attachments
+- Device identity, public keys, prekeys, and sender-key packaging
+- Read states, message recall, and APK upload from the management portal
+- TOTP support for management admins
+- FCM push notifications and WebRTC voice calls
 
-## 安全说明
+## Security Note
 
-这是一个 self-hosted E2EE template，目标是给个人或小范围自托管使用。
-它不是经过专业审计的 Signal 级密码学产品，不应做超出这一定位的安全宣称。
+This repository is meant for personal or small-scale self-hosted deployments.
+It is not a professionally audited Signal-class cryptography product, so do not market it as one.
 
-## 仓库初始化
+## Quick Start
 
-### 1. 服务端
+### 1. Configure the backend
 
-复制 `e2eechat_web/.env.example` 为 `e2eechat_web/.env`，至少填写：
+Copy `e2eechat_web/.env.example` to `e2eechat_web/.env` and set at least:
 
 - `JWT_SECRET`
 - `MANAGE_HOST`
 - `MANAGE_INITIAL_USERNAME`
 - `MANAGE_INITIAL_PASSWORD`
 
-首次启动空数据库时，服务端会用这两个环境变量创建第一个管理后台账号。
-默认不会再写入示例用户；只有当 `SEED_SAMPLE_USERS=true` 时，才会注入 `alice/bob/carol` 测试账号。
+On a fresh database, the server uses `MANAGE_INITIAL_USERNAME` and `MANAGE_INITIAL_PASSWORD` to bootstrap the first management admin.
 
-### 2. Android 默认服务器地址
+Sample users are disabled by default. Set `SEED_SAMPLE_USERS=true` only if you want local demo accounts such as `alice`, `bob`, and `carol`.
 
-复制 `e2eechat_app/template.properties.example` 为 `e2eechat_app/template.properties`，填写：
+### 2. Start the backend
+
+```bash
+cd e2eechat_web
+npm install
+npm start
+```
+
+### 3. Configure the Android client
+
+Copy `e2eechat_app/template.properties.example` to `e2eechat_app/template.properties`:
 
 ```properties
 defaultServerUrl=https://chat.example.com
 ```
 
-### 3. Firebase 可选
+### 4. Optional integrations
 
-如果你要启用 FCM：
+- Firebase / FCM:
+  Place the real `google-services.json` at `e2eechat_app/app/google-services.json` and fill the FCM service-account values in `e2eechat_web/.env`.
+- Release signing:
+  Put your real signing config in `e2eechat_app/keystore.properties`.
+  See `e2eechat_app/keystore.properties.example` for the expected format.
+  A Chinese signing guide is available at `e2eechat_app/RELEASE_SIGNING_GUIDE_ZH.md`.
 
-- 将真实的 `google-services.json` 放到 `e2eechat_app/app/google-services.json`
-- 在服务端 `.env` 填入 FCM service account 相关字段
+## Deployment
 
-仓库不会提交真实的 Firebase 配置文件。
+See [DEPLOYMENT.md](DEPLOYMENT.md) for a production-oriented deployment guide, including:
 
-### 4. Release 签名可选
+- domain layout
+- backend setup
+- `systemd` service example
+- reverse proxy example
+- Android client configuration
+- first-run and hardening checklist
 
-- 将真实签名配置写入 `e2eechat_app/keystore.properties`
-- 将真实 keystore 放在本地，不要提交
-- 示例见 `e2eechat_app/keystore.properties.example`
+## Repository Hygiene
 
-## 敏感文件策略
+Do not commit:
 
-以下内容不应提交：
+- `e2eechat_web/.env`
+- `e2eechat_web/data/`
+- `e2eechat_web/uploads/`
+- `e2eechat_web/app_release/`
+- `e2eechat_app/template.properties`
+- `e2eechat_app/keystore.properties`
+- `e2eechat_app/app/google-services.json`
+- any `.jks` or `.keystore` file
+- build output, Gradle caches, or `node_modules`
 
-- `google-services.json`
-- `keystore.properties`
-- `.jks` / `.keystore`
-- 服务端 `.env`
-- SQLite 数据库
-- `uploads/`
-- `app_release/`
-- Gradle 缓存、Node modules、构建产物
+## Compatibility
 
-## 说明
-
-- 当前模板使用现版本协议与命名，不兼容旧的 `familychat` 版本数据与密钥前缀。
-- 如果你是从旧仓库直接切换，请按“全新模板 / 新部署”理解，而不是原地无感升级。
+This template uses the current naming and protocol scheme and is intended for fresh deployments.
+It is not a drop-in upgrade for the old `familychat` repository or its legacy key-prefix/data layout.
